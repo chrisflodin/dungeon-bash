@@ -1,16 +1,24 @@
 #!/usr/bin/env node
-
-import { EnemyFactory } from "./enemy";
+import { BattleResolver } from "./battle";
 import { GameManager } from "./game";
-import { LevelBuilder, LevelFactory } from "./level";
+import { LevelBuilder } from "./level";
+import { Hero, UnitFactory } from "./unit";
 
 const game = new GameManager();
-const enemyFactory = new EnemyFactory();
-const levelFactory = new LevelFactory(enemyFactory);
-const levels = new LevelBuilder(levelFactory).build();
+const unitFactory = new UnitFactory();
+const levels = new LevelBuilder(unitFactory).build();
+const battleResolver = new BattleResolver();
+const hero = new Hero();
 
 async function start() {
   game.start();
+  const level1 = levels[0];
+  const battleResult = await battleResolver.battle(level1, hero);
+  if (typeof battleResult === "undefined") {
+    console.log("GAME OVER");
+  } else {
+    console.log("GAME CONTINUES");
+  }
 }
 
 start();

@@ -1,6 +1,6 @@
 import inquirer from "inquirer";
 
-import { wait } from "./utils/wait";
+import { wait } from "./level/utils/wait";
 
 type ActionNeeded = { key: string; damage: number };
 

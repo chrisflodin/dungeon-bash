@@ -1,61 +1,61 @@
-import { Enemy, EnemyConfig, EnemyFactory } from "../enemy";
-import { ENEMIES_IN_LEVEL, LevelGenerationConfig } from "./config";
+import { randomUUID, UUID } from "crypto";
+import { Unit, UnitFactory, UnitType } from "../unit";
 
-interface LevelConfig {
+interface UnitInLevel {}
+
+// Stored in db
+export interface LevelDTO {
+  id: UUID;
   name: string;
-  enemies: EnemyConfig[];
+  possibleUnits: UnitType[];
+  numberOfUnits: number;
 }
 
-class Level {
-  #name: string;
-  #enemies: Enemy[] = [];
-
-  constructor(name: string, enemies: Enemy[]) {
-    this.#name = name;
-    this.#enemies = enemies;
-  }
-
-  displayEnemies() {
-    console.log("------");
-    console.log("LEVEL");
-    console.log(this.#name);
-    console.log(this.#enemies);
-    console.log("------");
-  }
-}
-
-export class LevelFactory {
-  #enemyFactory: EnemyFactory;
-  constructor(enemyFactory: EnemyFactory) {
-    this.#enemyFactory = enemyFactory;
-  }
-
-  make(config: LevelConfig) {
-    const enemies = config.enemies.map((eConf) => {
-      return this.#enemyFactory.make(eConf);
-    });
-    return new Level("1", enemies);
-  }
+export interface Level {
+  name: string;
+  sequence: number;
+  units: Unit[];
 }
 
 export class LevelBuilder {
-  #levelFactory: LevelFactory;
+  unitFactory: UnitFactory;
 
-  constructor(levelFactory: LevelFactory) {
-    this.#levelFactory = levelFactory;
+  constructor(unitFactory: UnitFactory) {
+    this.unitFactory = unitFactory;
   }
 
   build(): Level[] {
-    return ENEMIES_IN_LEVEL.map((generationConfig) => {
-      const config = this.#generateLevelFromConfig(generationConfig);
-      return this.#levelFactory.make(config);
+    return LEVELS.map((level, i) => {
+      const units: Unit[] = [];
+      for (let i = 0; i < level.numberOfUnits; i++) {
+        const typeIndex = Math.floor(
+          Math.random() * level.possibleUnits.length
+        );
+        const type = level.possibleUnits[typeIndex];
+        const unit = this.unitFactory.make(type);
+        units.push(unit);
+      }
+
+      return {
+        name: level.name,
+        sequence: i,
+        units,
+      };
     });
   }
-
-  #generateLevelFromConfig(config: LevelGenerationConfig): LevelConfig {
-    return {
-      name: "Level 1",
-      enemies: [{ number: 1, type: "Soldier" }],
-    };
-  }
 }
+
+export const LEVELS: LevelDTO[] = [
+  {
+    id: randomUUID(),
+    name: "Test",
+    numberOfUnits: 2,
+    possibleUnits: ["Barbarian", "Soldier"],
+  },
+  {
+    id: randomUUID(),
+    name: "Test2",
+    numberOfUnits: 3,
+    possibleUnits: ["Barbarian", "Soldier"],
+  },
+];
