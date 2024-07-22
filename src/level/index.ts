@@ -1,8 +1,6 @@
 import { randomUUID, UUID } from "crypto";
 import { Unit, UnitFactory, UnitType } from "../unit";
 
-interface UnitInLevel {}
-
 // Stored in db
 export interface LevelDTO {
   id: UUID;
@@ -18,10 +16,10 @@ export interface Level {
 }
 
 export class LevelBuilder {
-  unitFactory: UnitFactory;
+  #unitFactory: UnitFactory;
 
   constructor(unitFactory: UnitFactory) {
-    this.unitFactory = unitFactory;
+    this.#unitFactory = unitFactory;
   }
 
   build(): Level[] {
@@ -32,7 +30,7 @@ export class LevelBuilder {
           Math.random() * level.possibleUnits.length
         );
         const type = level.possibleUnits[typeIndex];
-        const unit = this.unitFactory.make(type);
+        const unit = this.#unitFactory.make(type);
         units.push(unit);
       }
 

@@ -16,9 +16,9 @@ export abstract class Unit {
   readonly name: string;
   readonly isHero: boolean;
   readonly id: UUID;
-  initiative: number;
-  protected _attackDamage: number;
   protected _allies: Unit[] = [];
+  attackDamage: number;
+  initiative: number;
   health: number;
 
   constructor({
@@ -34,10 +34,10 @@ export abstract class Unit {
     initiative: number;
     isHero?: boolean;
   }) {
-    this.name = name;
     this.id = randomUUID();
+    this.name = isHero ? name : `${name}-${this.id.slice(0, 4)}`;
     this.isHero = isHero ?? false;
-    this._attackDamage = attackDamage;
+    this.attackDamage = attackDamage;
     this.health = health;
     this.initiative = initiative;
   }
@@ -51,14 +51,14 @@ export class Hero extends Unit {
     super({
       name: "Hero",
       isHero: true,
-      attackDamage: 3,
+      attackDamage: 5,
       health: 10,
       initiative: 12,
     });
   }
 
   attack(): number {
-    return this._attackDamage;
+    return this.attackDamage;
   }
 
   initialSpecial(): void {
@@ -69,14 +69,14 @@ export class Soldier extends Unit {
   constructor() {
     super({
       name: "Soldier",
-      attackDamage: 3,
-      health: 5,
-      initiative: 8,
+      attackDamage: random(1, 3),
+      health: random(2, 5),
+      initiative: random(3, 8),
     });
   }
 
   attack(): number {
-    return this._attackDamage;
+    return this.attackDamage;
   }
 
   bolster() {
@@ -94,14 +94,14 @@ export class Barbarian extends Unit {
   constructor() {
     super({
       name: "Barbarian",
-      attackDamage: 3,
-      health: 8,
-      initiative: 9,
+      attackDamage: random(3, 5),
+      health: random(5, 8),
+      initiative: random(5, 13),
     });
   }
 
   attack(): number {
-    return this._attackDamage;
+    return this.attackDamage;
   }
 
   initialSpecial(): void {
@@ -117,4 +117,7 @@ export class UnitFactory {
         return new Barbarian();
     }
   }
+}
+function random(arg0: number, arg1: number): number {
+  throw new Error("Function not implemented.");
 }

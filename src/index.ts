@@ -2,23 +2,18 @@
 import { BattleResolver } from "./battle";
 import { GameManager } from "./game";
 import { LevelBuilder } from "./level";
+import { LevelResolver } from "./levelResolver";
 import { Hero, UnitFactory } from "./unit";
 
-const game = new GameManager();
 const unitFactory = new UnitFactory();
-const levels = new LevelBuilder(unitFactory).build();
+const levelBuilder = new LevelBuilder(unitFactory);
 const battleResolver = new BattleResolver();
+const levelResolver = new LevelResolver(levelBuilder, battleResolver);
 const hero = new Hero();
+const game = new GameManager(levelResolver, hero);
 
 async function start() {
-  game.start();
-  const level1 = levels[0];
-  const battleResult = await battleResolver.battle(level1, hero);
-  if (typeof battleResult === "undefined") {
-    console.log("GAME OVER");
-  } else {
-    console.log("GAME CONTINUES");
-  }
+  await game.start();
 }
 
 start();

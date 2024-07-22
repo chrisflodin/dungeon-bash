@@ -8,7 +8,7 @@ export async function wait(s: number) {
   });
 }
 
-export async function waitForInput() {
+export async function input() {
   return new Promise((resolve) => {
     inquirer
       .prompt({ type: "input", name: "", message: "" })
