@@ -31,18 +31,20 @@ export class BattleResolver {
     this.units = [];
   }
 
-  async battle(level: Level, hero: Hero) {
+  async battle(level: Level, hero: Hero): Promise<Hero | undefined> {
     this.turnTracker = 0;
     this.units = [...level.units, hero];
     this.turnOrder = this.calculateTurnOrder(this.units);
-    await this.#startBattle();
+    const result = await this.playBattle();
+    if (result) {
+      hero.health === result?.health;
+      return hero;
+    } else {
+      return undefined;
+    }
   }
 
-  async *playTurns(): AsyncGenerator<
-    BattleState,
-    BattleState | undefined,
-    void
-  > {
+  async playBattle(): Promise<UnitState | undefined> {
     // Starting State
     const hero = this.units.find((u) => !!u.isHero);
     const enemies = this.units.filter((u) => !u.isHero);
@@ -77,12 +79,8 @@ export class BattleResolver {
       if (!heroState) throw new Error("No hero state");
       const isHeroDefeated = heroState?.health < 1;
 
-      if (isEnemiesDefeated) {
-        return state;
-      }
+      if (isEnemiesDefeated) return heroState;
       if (isHeroDefeated) return undefined;
-
-      yield state;
     }
   }
 
@@ -149,22 +147,6 @@ export class BattleResolver {
 
     await waitForInput();
     this.#incrementTurn();
-    return state;
-  }
-
-  async #startBattle(): Promise<BattleState | undefined> {
-    const turns = this.playTurns();
-    let state: BattleState = [];
-
-    while (true) {
-      const { value, done } = await turns.next();
-      if (value === undefined) return undefined;
-      if (done) {
-        state = value;
-        break;
-      }
-    }
-
     return state;
   }
 
