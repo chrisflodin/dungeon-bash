@@ -2,17 +2,21 @@ import chalk from "chalk";
 import { BattleState, UnitState } from "./battle";
 
 export class UI {
-  static renderBattleState(state: BattleState) {
+  static startGame() {
+    console.log("Starting game");
+  }
+
+  static battleState(state: BattleState) {
     const hero = state.find((unit) => unit.isHero);
     const enemies = state
       .filter((unit) => !unit.isHero)
       .sort((a, b) => b.initiative - a.initiative);
     if (!hero || !enemies) throw Error("Something went wrong");
 
-    this.#renderunitBattleState(hero);
+    this.#unitBattleState(hero);
     console.log();
     console.log(chalk.bgRed(`Enemies`));
-    enemies.forEach((e) => this.#renderunitBattleState(e));
+    enemies.forEach((e) => this.#unitBattleState(e));
     console.log(`==========================`);
   }
 
@@ -20,7 +24,7 @@ export class UI {
     console.log(chalk.bold(`${unit.name} is dead, skipping turn...`));
   }
 
-  static #renderunitBattleState(unit: UnitState) {
+  static #unitBattleState(unit: UnitState) {
     const color =
       unit.health < 1 ? "red" : unit.active ? "greenBright" : "white";
 

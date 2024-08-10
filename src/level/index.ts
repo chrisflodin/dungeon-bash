@@ -1,59 +1,101 @@
 import { randomUUID, UUID } from "crypto";
-import { Unit, UnitFactory, UnitType } from "../unit";
+import { EnemyFactory, UnitProfile, UnitType } from "../unit";
+import { isBattleLevelConfig, isShopLevelConfig } from "../utils/typeNarrowing";
+import { BattleLevelConfig, LevelConfig } from "./configs";
 
-// Stored in db
-export interface LevelDTO {
+export enum LevelType {
+  BATTLE = "BATTLE",
+  SHOP = "SHOP",
+}
+
+export type Level = BattleLevel | ShopLevel;
+export interface BattleLevel {
   id: UUID;
-  name: string;
-  possibleUnits: UnitType[];
-  numberOfUnits: number;
+  type: LevelType;
+  name?: string;
+  sequence?: number;
+  enemies: UnitProfile[];
+  possibleUnits?: UnitType[];
+  numberOfUnits?: number;
 }
 
-export interface Level {
-  name: string;
-  sequence: number;
-  units: Unit[];
+export interface ShopLevel {
+  id: UUID;
+  type: LevelType;
+  name?: string;
+  sequence?: number;
+  items: any[];
 }
 
-export class LevelBuilder {
-  #unitFactory: UnitFactory;
+export class BattleLevelBuilder {
+  #unitFactory: EnemyFactory;
 
-  constructor(unitFactory: UnitFactory) {
+  constructor(unitFactory: EnemyFactory) {
     this.#unitFactory = unitFactory;
   }
 
-  build(): Level[] {
-    return LEVELS.map((level, i) => {
-      const units: Unit[] = [];
-      for (let i = 0; i < level.numberOfUnits; i++) {
-        const typeIndex = Math.floor(
-          Math.random() * level.possibleUnits.length
-        );
-        const type = level.possibleUnits[typeIndex];
-        const unit = this.#unitFactory.make(type);
-        units.push(unit);
-      }
+  buildLevel(levelConfig: BattleLevelConfig, index: number): BattleLevel {
+    const enemies: UnitProfile[] = [];
+    const { name, numberOfUnits, possibleUnits, type } = levelConfig;
+    for (let i = 0; i < numberOfUnits; i++) {
+      const typeIndex = Math.floor(Math.random() * possibleUnits.length);
+      const type = possibleUnits[typeIndex];
+      const unit = this.#unitFactory.make(type);
+      enemies.push(unit);
+    }
 
-      return {
-        name: level.name,
-        sequence: i,
-        units,
-      };
-    });
+    return {
+      id: randomUUID(),
+      name: name,
+      sequence: index,
+      type,
+      enemies,
+    };
   }
 }
 
-export const LEVELS: LevelDTO[] = [
-  {
-    id: randomUUID(),
-    name: "Test",
-    numberOfUnits: 2,
-    possibleUnits: ["Barbarian", "Soldier"],
-  },
-  {
-    id: randomUUID(),
-    name: "Test2",
-    numberOfUnits: 3,
-    possibleUnits: ["Barbarian", "Soldier"],
-  },
-];
+// Not implemented
+export class ShopLevelBuilder {
+  buildLevel(): ShopLevel {
+    return {
+      id: randomUUID(),
+      name: "Name",
+      items: [],
+      type: LevelType.SHOP,
+      sequence: 0,
+    };
+  }
+}
+
+export class LevelBuilder {
+  battleLevelBuilder: BattleLevelBuilder;
+  shopLevelBuilder: ShopLevelBuilder;
+
+  constructor(
+    battleLevelBuilder: BattleLevelBuilder,
+    shopLevelBuilder: ShopLevelBuilder
+  ) {
+    this.battleLevelBuilder = battleLevelBuilder;
+    this.shopLevelBuilder = shopLevelBuilder;
+  }
+
+  build(levelConfigs: LevelConfig[]): Level[] {
+    const built: Level[] = [];
+    levelConfigs.forEach((config, i) => {
+      switch (config.type) {
+        case LevelType.BATTLE:
+          if (isBattleLevelConfig(config))
+            built.push(this.battleLevelBuilder.buildLevel(config, i));
+          break;
+        case LevelType.SHOP:
+          // Not implemented yet
+          if (isShopLevelConfig(config))
+            built.push(this.shopLevelBuilder.buildLevel());
+
+        default:
+          throw new Error(`Level type: ${config.type} not recognized`);
+      }
+    });
+    return built;
+  }
+}

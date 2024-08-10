@@ -1,8 +1,9 @@
 import { randomUUID, UUID } from "crypto";
+import { random } from "./utils/random";
 
 type UnitMap = {
-  Soldier: typeof Soldier;
-  Barbarian: typeof Barbarian;
+  Soldier: typeof SoldierProfile;
+  Barbarian: typeof BarbarianProfile;
 };
 
 export type UnitType = keyof UnitMap;
@@ -12,11 +13,11 @@ export interface UnitConfig {
   number: number;
 }
 
-export abstract class Unit {
+export abstract class UnitProfile {
   readonly name: string;
   readonly isHero: boolean;
   readonly id: UUID;
-  protected _allies: Unit[] = [];
+  protected _allies: UnitProfile[] = [];
   attackDamage: number;
   initiative: number;
   health: number;
@@ -46,7 +47,9 @@ export abstract class Unit {
   abstract initialSpecial(): void;
 }
 
-export class Hero extends Unit {
+export type HeroState = Pick<UnitProfile, "health">;
+
+export class HeroProfile extends UnitProfile {
   constructor() {
     super({
       name: "Hero",
@@ -65,7 +68,7 @@ export class Hero extends Unit {
     // this.bolster();
   }
 }
-export class Soldier extends Unit {
+export class SoldierProfile extends UnitProfile {
   constructor() {
     super({
       name: "Soldier",
@@ -90,7 +93,7 @@ export class Soldier extends Unit {
   }
 }
 
-export class Barbarian extends Unit {
+export class BarbarianProfile extends UnitProfile {
   constructor() {
     super({
       name: "Barbarian",
@@ -108,16 +111,13 @@ export class Barbarian extends Unit {
     throw new Error("Not implemented");
   }
 }
-export class UnitFactory {
+export class EnemyFactory {
   make(unitType: UnitType) {
     switch (unitType) {
       case "Soldier":
-        return new Soldier();
+        return new SoldierProfile();
       case "Barbarian":
-        return new Barbarian();
+        return new BarbarianProfile();
     }
   }
-}
-function random(arg0: number, arg1: number): number {
-  throw new Error("Function not implemented.");
 }

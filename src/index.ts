@@ -1,21 +1,30 @@
 #!/usr/bin/env node
-import { BattleResolver } from "./battle";
+import { BattleManager } from "./battle";
 import { GameManager } from "./game";
-import { LevelBuilder } from "./level";
-import { LevelResolver } from "./levelResolver";
-import { Hero, UnitFactory } from "./unit";
+import { BattleLevelBuilder, LevelBuilder, ShopLevelBuilder } from "./level";
+import { BATTLE_LEVELS } from "./level/configs";
+import { ShopManager } from "./shop";
+import { UI } from "./ui-render";
+import { EnemyFactory, HeroProfile } from "./unit";
 
-const unitFactory = new UnitFactory();
-const levelBuilder = new LevelBuilder(unitFactory);
-const battleResolver = new BattleResolver();
-const levelResolver = new LevelResolver(levelBuilder, battleResolver);
-const hero = new Hero();
-const game = new GameManager(levelResolver, hero);
+// Set up unit creation
+const enemyFactory = new EnemyFactory();
+const hero = new HeroProfile();
+
+// Build levels
+const battleLevelBuilder = new BattleLevelBuilder(enemyFactory);
+const shopLevelBuilder = new ShopLevelBuilder();
+const levelBuilder = new LevelBuilder(battleLevelBuilder, shopLevelBuilder);
+const levels = levelBuilder.build(BATTLE_LEVELS);
+
+// Handle gameplay logic
+const battleManager = new BattleManager();
+const shopManager = new ShopManager();
+const game = new GameManager({ levels, hero, battleManager, shopManager });
 
 async function start() {
-  await game.start();
+  UI.startGame();
+  await game.playLevels();
 }
 
 start();
-
-// startSideQuest();
