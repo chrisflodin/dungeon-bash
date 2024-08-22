@@ -3,7 +3,6 @@ import { LevelResult } from "../game";
 import { BattleLevel, Level } from "../level";
 import { UI } from "../ui-render";
 import { UnitProfile } from "../unit";
-import { input } from "../utils/wait";
 
 enum ActionType {
   ATTACK,
@@ -56,6 +55,8 @@ export class BattleManager {
       };
     });
 
+    await UI.printBattleState(state);
+
     while (true) {
       state = await this.playTurn(state);
 
@@ -87,58 +88,60 @@ export class BattleManager {
     const target: UnitState = heroTurn
       ? possibleTargets[Math.floor(Math.random() * possibleTargets.length)]
       : hero;
+
     state = this.#updateTargetState(state, target);
-
-    // const { action }: { action: Action } = await inquirer.prompt<{
-    //   action: Action;
-    // }>({
-    //   name: "Choose action",
-    //   choices: [{ name: "Attack!", value: Action.ATTACK }],
-    //   type: "list",
-    //   message: "asd",
-    // });
-
-    // const choices: Choice[] = this.enemies.map((u) => ({value: u.}))
-
-    // const { enemy }: { enemy: Action } = await inquirer.prompt<{
-    //   action: Action;
-    // }>({
-    //   name: "Choose action",
-    //   choices: [{}],
-    //   type: "list",
-    //   message: "asd",
-    // });
 
     // Determine what kind of action. It is static for now.
     if (activeUnit.health < 1) {
-      UI.battleState(state);
-      UI.renderUnitDead(activeUnit);
-      await input();
+      await UI.printUnitDead(activeUnit);
+
       this.#incrementTurn();
       return state;
     }
-
-    UI.battleState(state);
 
     const action: Action = {
       type: ActionType.ATTACK,
       target: target.id,
     };
 
-    switch (action.type) {
-      case ActionType.ATTACK:
-        console.log(`${activeUnit.name} is going to attack ${target.name}`);
-        state = this.#attackUnit(state, activeUnit, target);
-        break;
-      case ActionType.DEFEND:
-        console.log(`${activeUnit.name} is going to defend`);
-        // Add your code for Action 2 here
-        break;
-    }
-    await input();
+    UI.printBattleState(state);
+    await UI.printIntendAction({
+      actor: activeUnit,
+      description: "Hey",
+      name: "not implemented",
+      targets: [target],
+    });
 
+    this.resolveAction({
+      action,
+      activeUnit,
+      state,
+      target,
+    });
+
+    await UI.printBattleState(state);
     this.#incrementTurn();
     return state;
+  }
+
+  resolveAction({
+    action,
+    activeUnit,
+    state,
+    target,
+  }: {
+    state: BattleState;
+    action: Action;
+    activeUnit: UnitState;
+    target: UnitState;
+  }) {
+    switch (action.type) {
+      case ActionType.ATTACK:
+        return this.#attackUnit(state, activeUnit, target);
+      case ActionType.DEFEND:
+        // Not implemented
+        break;
+    }
   }
 
   getHero(state: BattleState): UnitState {
