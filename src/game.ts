@@ -1,7 +1,3 @@
-/*
-Soldiers are able to bolster their allies and increase their power.
-*/
-
 import { BattleManager } from "./battle";
 import { Level, LevelType } from "./level";
 import { ShopManager } from "./shop";
