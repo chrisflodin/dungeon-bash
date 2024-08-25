@@ -1,8 +1,7 @@
 import { UUID } from "crypto";
-import { LevelResult } from "../game";
 import { BattleLevel } from "../level";
-import { UI } from "../ui-render";
-import { UnitProfile } from "../unit";
+import { UIBattle } from "../ui-render";
+import { Hero, Unit } from "../unit";
 
 enum ActionType {
   ATTACK,
@@ -14,15 +13,14 @@ interface Action {
   type: ActionType;
 }
 
-export type UnitState = Pick<
-  UnitProfile,
-  "id" | "health" | "isHero" | "name" | "initiative"
-> & { profile: UnitProfile; active?: boolean; target?: boolean };
-export type BattleState = UnitState[];
+export type BattleState = {
+  units: Array<Unit | Hero>;
+  activeUnit?: string;
+};
 
 type ActionResult = {
   description: string;
-  state: UnitState[];
+  state: BattleState;
 };
 
 export class BattleManager {
@@ -34,27 +32,13 @@ export class BattleManager {
     this.turnOrder = [];
   }
 
-  async playBattle(
-    level: BattleLevel,
-    hero: UnitProfile
-  ): Promise<LevelResult> {
-    const participants = [...level.enemies, hero];
+  async playBattle(level: BattleLevel, hero: Hero): Promise<Hero> {
+    let state: BattleState = {
+      units: [...level.enemies, hero],
+      activeUnit: undefined,
+    };
     this.turn = 0;
-    this.turnOrder = this.calculateTurnOrder(participants);
-
-    let state: BattleState = participants.map((u) => {
-      const { health, id, initiative, isHero, name } = u;
-      return {
-        id,
-        health,
-        initiative,
-        isHero,
-        name,
-        profile: u,
-      };
-    });
-
-    await UI.printFrame(state, "Starting battle");
+    this.turnOrder = this.calculateTurnOrder(state);
 
     while (true) {
       state = await this.playTurn(state);
@@ -65,39 +49,30 @@ export class BattleManager {
       );
       const isHeroDefeated = hero.health < 1;
 
-      if (isEnemiesDefeated) {
-        await UI.printFrame(state, "Battle won!");
-        return { state: { health: hero.health } };
-      }
-
-      if (isHeroDefeated) {
-        await UI.printFrame(state, "Game over :(");
-        return { state: { health: hero.health } };
-      }
+      if (isEnemiesDefeated || isHeroDefeated) return hero;
     }
   }
 
   async playTurn(state: BattleState): Promise<BattleState> {
-    const hero = state.find((u) => !!u.isHero);
-    const enemies = state.filter((u) => !u.isHero);
+    const hero = state.units.find((u) => u instanceof Hero);
+    const enemies = state.units.filter((u) => !(u instanceof Hero));
     if (!hero) throw Error("Hero not found");
     if (!enemies) throw Error("Enemies not found");
 
     // Determine active unit
     state = this.#updateActiveUnit(state);
     const activeUnit = this.getActiveUnit(state);
-    const heroTurn: boolean = activeUnit.isHero;
+    const heroTurn: boolean = activeUnit instanceof Hero;
 
     // Determine target
     const possibleTargets = enemies.filter((e) => e.health > 0);
-    const target: UnitState = heroTurn
+    const target: Unit = heroTurn
       ? possibleTargets[Math.floor(Math.random() * possibleTargets.length)]
       : hero;
-    state = this.#updateTargetState(state, target);
 
     // End unit turn if dead
     if (activeUnit.health < 1) {
-      await UI.printFrame(
+      await UIBattle.printFrame(
         state,
         `${activeUnit.name} is dead, skipping turn...`
       );
@@ -111,42 +86,48 @@ export class BattleManager {
       target: target.id,
     };
 
-    const intendedAction = UI.getIntendedAction({
+    const intendedAction = UIBattle.getIntendedAction({
       actor: activeUnit,
       description: "attack",
       targets: [target],
     });
 
-    await UI.printFrame(state, intendedAction);
+    await UIBattle.printFrame(state, intendedAction);
 
     const result = this.resolveAction({
       action,
-      activeUnit,
       state,
       target,
     });
     state = result.state;
 
-    await UI.printFrame(result.state, result.description);
+    await UIBattle.printFrame(state, result.description);
 
     this.#incrementTurn();
     return state;
   }
+  getActiveUnit(state: BattleState) {
+    const unit = state.units.find((u) => u.id === state.activeUnit);
+    if (!unit) throw Error("Could not get active unit");
+    return unit;
+  }
 
   resolveAction({
     action,
-    activeUnit,
     state,
     target,
   }: {
     state: BattleState;
     action: Action;
-    activeUnit: UnitState;
-    target: UnitState;
+    target: Unit;
   }): ActionResult {
     switch (action.type) {
       case ActionType.ATTACK:
-        return this.#attackUnit(state, activeUnit, target);
+        return this.#resolveAttackOnUnit(
+          state,
+          this.getActiveUnit(state),
+          target
+        );
       case ActionType.DEFEND:
         // Not implemented
         break;
@@ -154,41 +135,29 @@ export class BattleManager {
     throw Error("No action was resolved");
   }
 
-  getHero(state: BattleState): UnitState {
-    const hero = state.find((u) => !!u.isHero);
-    if (!hero) throw new Error("ERR: Hero not found");
+  getHero(state: BattleState): Hero {
+    const hero = state.units.find((u) => u instanceof Hero);
+    if (!hero || !(hero instanceof Hero))
+      throw new Error("ERR: Hero not found");
     return hero;
   }
 
-  getActiveUnit(state: BattleState): UnitState {
-    const activeUnit = state.find((u) => u.active);
-    if (!activeUnit) throw new Error("ERR: active unit not found");
-    return activeUnit;
-  }
-
-  getEnemies(state: BattleState): UnitState[] {
-    const enemies = state.filter((u) => !u.isHero);
+  getEnemies(state: BattleState): Unit[] {
+    const enemies = state.units.filter((u) => !(u instanceof Hero));
     if (enemies.length < 1) throw new Error("ERR: Enemies not found");
     return enemies;
   }
 
-  #attackUnit(
+  #resolveAttackOnUnit(
     state: BattleState,
-    attacker: UnitState,
-    target: UnitState
+    actor: Unit,
+    target: Unit
   ): ActionResult {
-    const targetState = state.find((u) => u.id === target.id);
-    if (!targetState) throw new Error("Could not find target");
-    const restOfUnits = state.filter((u) => u.id !== target.id);
-    const damage = attacker.profile.attack();
-
-    targetState.health = Math.max(
-      0,
-      targetState.health - attacker.profile.attack()
-    );
+    const restOfUnits = state.units.filter((u) => u.id !== target.id);
+    target.health = Math.max(0, target.health - actor.attackDamage);
     return {
-      state: [...restOfUnits, targetState],
-      description: `${target.name} suffered ${damage} damage from ${attacker.name}`,
+      state: { ...state, units: [...restOfUnits, target] },
+      description: `${target.name} suffered ${actor.attackDamage} damage from ${actor.name}`,
     };
   }
 
@@ -197,22 +166,14 @@ export class BattleManager {
   }
 
   #updateActiveUnit(state: BattleState): BattleState {
-    const nextUnitId = this.turnOrder[this.turn];
-    return state.map((unitState) => ({
-      ...unitState,
-      active: unitState.id === nextUnitId,
-    }));
+    return {
+      ...state,
+      activeUnit: this.turnOrder[this.turn],
+    };
   }
 
-  #updateTargetState(state: BattleState, target: UnitState): BattleState {
-    return state.map((unitState) => ({
-      ...unitState,
-      target: target.target,
-    }));
-  }
-
-  calculateTurnOrder(units: UnitProfile[]): UUID[] {
-    const participants: UnitProfile[] = [...units];
+  calculateTurnOrder(state: BattleState): UUID[] {
+    const participants: Unit[] = [...state.units];
     return participants
       .sort((a, b) => b.initiative - a.initiative)
       .map((u) => u.id);

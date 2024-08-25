@@ -1,8 +1,7 @@
-import { LevelResult } from "../game";
-import { HeroState } from "../unit";
+import { Hero } from "../unit";
 
 export class ShopManager {
-  async visitShop(state: HeroState): Promise<LevelResult> {
-    return { state };
+  async visitShop(hero: Hero): Promise<Hero> {
+    return hero;
   }
 }

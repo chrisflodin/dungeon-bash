@@ -1,5 +1,5 @@
 import { randomUUID, UUID } from "crypto";
-import { EnemyFactory, UnitProfile, UnitType } from "../unit";
+import { EnemyFactory, Unit, UnitType } from "../unit";
 import { isBattleLevelConfig, isShopLevelConfig } from "../utils/typeNarrowing";
 import { BattleLevelConfig, LevelConfig } from "./configs";
 
@@ -14,8 +14,8 @@ export interface BattleLevel {
   type: LevelType;
   name?: string;
   sequence?: number;
-  enemies: UnitProfile[];
-  possibleUnits?: UnitType[];
+  enemies: Unit[];
+  canEncounterUnitType?: UnitType[];
   numberOfUnits?: number;
 }
 
@@ -35,11 +35,11 @@ export class BattleLevelBuilder {
   }
 
   buildLevel(levelConfig: BattleLevelConfig, index: number): BattleLevel {
-    const enemies: UnitProfile[] = [];
-    const { name, numberOfUnits, possibleUnits, type } = levelConfig;
+    const enemies: Unit[] = [];
+    const { name, numberOfUnits, canEncounterUnitType, type } = levelConfig;
     for (let i = 0; i < numberOfUnits; i++) {
-      const typeIndex = Math.floor(Math.random() * possibleUnits.length);
-      const type = possibleUnits[typeIndex];
+      const typeIndex = Math.floor(Math.random() * canEncounterUnitType.length);
+      const type = canEncounterUnitType[typeIndex];
       const unit = this.#unitFactory.make(type);
       enemies.push(unit);
     }

@@ -4,12 +4,12 @@ import { GameManager } from "./game";
 import { BattleLevelBuilder, LevelBuilder, ShopLevelBuilder } from "./level";
 import { BATTLE_LEVELS } from "./level/configs";
 import { ShopManager } from "./shop";
-import { UI } from "./ui-render";
-import { EnemyFactory, HeroProfile } from "./unit";
+import { UIWorld } from "./ui-render";
+import { EnemyFactory, Hero } from "./unit";
 
 // Set up unit creation
+const hero = new Hero();
 const enemyFactory = new EnemyFactory();
-const hero = new HeroProfile();
 
 // Build levels
 const battleLevelBuilder = new BattleLevelBuilder(enemyFactory);
@@ -23,7 +23,10 @@ const shopManager = new ShopManager();
 const game = new GameManager({ levels, hero, battleManager, shopManager });
 
 async function start() {
-  UI.startGame();
+  await UIWorld.printFrame(hero, [
+    "Welcome to Dungeon Bash!",
+    "These are your hero's stats.",
+  ]);
   await game.playLevels();
 }
 

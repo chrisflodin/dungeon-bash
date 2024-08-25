@@ -1,41 +1,44 @@
 import { BattleManager } from "./battle";
 import { Level, LevelType } from "./level";
 import { ShopManager } from "./shop";
-import { HeroProfile, HeroState } from "./unit";
+import { UIWorld } from "./ui-render";
+import { Hero } from "./unit";
 import { isBattleLevel, isShopLevel } from "./utils/typeNarrowing";
 
-export interface LevelResult {
-  state: HeroState;
-}
-
 export class GameManager {
+  hero: Hero;
+  levels: Level[];
   battleManager: BattleManager;
   shopManager: ShopManager;
-  hero: HeroProfile;
-  levels: Level[];
 
   constructor({
-    levels,
     hero,
+    levels,
     battleManager,
     shopManager,
   }: {
+    hero: Hero;
     levels: Level[];
     battleManager: BattleManager;
     shopManager: ShopManager;
-    hero: HeroProfile;
   }) {
-    this.battleManager = battleManager;
-    this.shopManager = shopManager;
     this.hero = hero;
     this.levels = levels;
+    this.battleManager = battleManager;
+    this.shopManager = shopManager;
   }
 
-  async #playLevel(level: Level): Promise<LevelResult> {
+  async #playLevel(level: Level): Promise<Hero> {
     switch (level.type) {
       case LevelType.BATTLE:
-        if (isBattleLevel(level))
-          return await this.battleManager.playBattle(level, this.hero);
+        if (isBattleLevel(level)) {
+          await UIWorld.printFrame(this.hero, ["Starting battle"]);
+          const hero = await this.battleManager.playBattle(level, this.hero);
+          await UIWorld.printFrame(hero, [
+            hero.health > 0 ? "You won the battle!" : "You lost :(",
+          ]);
+          return hero;
+        }
       case LevelType.SHOP:
         if (isShopLevel(level))
           return await this.shopManager.visitShop(this.hero);

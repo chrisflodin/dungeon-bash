@@ -1,9 +1,9 @@
-import { UnitState } from ".";
+import { Unit } from ".";
 
 export interface Action {
   description: string;
-  actor: UnitState;
-  targets: UnitState[];
+  actor: Unit;
+  targets: Unit[];
 }
 
 export interface ActionResult {
@@ -15,7 +15,7 @@ export class ActionFactory {
 }
 
 export class ActionResolver {
-  resolve(action: Action): UnitState {
+  resolve(action: Action): Unit {
     return action.actor;
   }
 }

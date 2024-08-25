@@ -8,7 +8,7 @@ export interface LevelConfig {
 
 export interface BattleLevelConfig extends LevelConfig {
   name: string;
-  possibleUnits: UnitType[];
+  canEncounterUnitType: UnitType[];
   numberOfUnits: number;
   type: LevelType.BATTLE;
 }
@@ -24,13 +24,13 @@ export const BATTLE_LEVELS: BattleLevelConfig[] = [
   {
     name: "Test",
     numberOfUnits: 2,
-    possibleUnits: ["Barbarian", "Soldier"],
+    canEncounterUnitType: ["barbarian", "soldier"],
     type: LevelType.BATTLE,
   },
   {
     name: "Test2",
     numberOfUnits: 3,
-    possibleUnits: ["Barbarian", "Soldier"],
+    canEncounterUnitType: ["barbarian", "soldier"],
     type: LevelType.BATTLE,
   },
 ];
